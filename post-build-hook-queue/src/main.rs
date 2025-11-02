@@ -23,6 +23,23 @@ fn run_timeout(child: io::Result<Child>, timeout: Duration) -> anyhow::Result<Op
     let start: Instant = Instant::now();
     let mut child: Child = child.context("Failed to spawn child process")?;
 
+    if let Some(stdout) = child.stdout.take() {
+        std::thread::spawn(|| {
+            for line in std::io::BufReader::new(stdout).lines() {
+                let line = line.unwrap();
+                log::info!("{}", line);
+            }
+        });
+    }
+    if let Some(stderr) = child.stderr.take() {
+        std::thread::spawn(|| {
+            for line in std::io::BufReader::new(stderr).lines() {
+                let line = line.unwrap();
+                log::error!("{}", line);
+            }
+        });
+    }
+
     if let Some(status) = child
         .wait_timeout(timeout)
         .context("Error attempting to wait for child process")?
@@ -138,6 +155,8 @@ fn try_push_path(path: &OsStr) -> anyhow::Result<()> {
             .arg("--key-file")
             .arg(key_path)
             .arg(path)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn();
 
         let signed: bool = run_timeout(child, SIGNING_TIMEOUT)? == Some(0);
@@ -153,6 +172,8 @@ fn try_push_path(path: &OsStr) -> anyhow::Result<()> {
             .arg("push")
             .arg(dst)
             .arg(path)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn();
 
         run_timeout(child, UPLOAD_TIMEOUT)?;
