@@ -16,8 +16,8 @@ use wait_timeout::ChildExt;
 
 const SIGNING_TIMEOUT: Duration = Duration::from_secs(60);
 
-// 10 minutes seems reasonable
-const UPLOAD_TIMEOUT: Duration = Duration::from_secs(600);
+// 1 hour seems reasonable
+const UPLOAD_TIMEOUT: Duration = Duration::from_secs(3600);
 
 fn run_timeout(child: io::Result<Child>, timeout: Duration) -> anyhow::Result<Option<i32>> {
     let start: Instant = Instant::now();
@@ -149,9 +149,8 @@ fn try_push_path(path: &OsStr) -> anyhow::Result<()> {
     if let Some(dst) = std::env::var_os("NPBHQ_UPLOAD_TO") {
         log::info!("Uploading {path:?}");
 
-        let child: io::Result<Child> = Command::new("nix")
-            .arg("copy")
-            .arg("--to")
+        let child: io::Result<Child> = Command::new("attic")
+            .arg("push")
             .arg(dst)
             .arg(path)
             .spawn();
