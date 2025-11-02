@@ -2,12 +2,12 @@ use anyhow::Context;
 use log::LevelFilter;
 use std::{
     ffi::{OsStr, OsString},
-    io::{self, ErrorKind},
+    io::{self, ErrorKind, BufRead},
     os::{
         fd::AsFd as _,
         unix::{net::UnixDatagram, prelude::OsStrExt},
     },
-    process::{Child, Command},
+    process::{Child, Command, Stdio},
     sync::{Arc, Mutex},
     thread::JoinHandle,
     time::{Duration, Instant},
@@ -35,7 +35,7 @@ fn run_timeout(child: io::Result<Child>, timeout: Duration) -> anyhow::Result<Op
         std::thread::spawn(|| {
             for line in std::io::BufReader::new(stderr).lines() {
                 let line = line.unwrap();
-                log::error!("{}", line);
+                log::info!("{}", line);
             }
         });
     }
